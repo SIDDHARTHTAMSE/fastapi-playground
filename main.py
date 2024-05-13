@@ -3,7 +3,7 @@ from typing import Optional
 from fastapi import Body, FastAPI, Query,Path
 
 from fastapi import FastAPI
-from pydantic import BaseModel,  Field
+from pydantic import BaseModel,  Field, HttpUrl
 
 app = FastAPI()
 
@@ -219,20 +219,62 @@ app = FastAPI()
 # ):
 #
 
+#
+# class Item(BaseModel):
+#     name: str | None = Field(
+#         ...,
+#         description="Name of the electronic item"
+#     )
+#     description: str | None = Field(
+#         None, title="The description of the item", max_length=300
+#     )
+#     price: float = Field(..., gt=0, description="The prize must be greater than zero")
+#     tax: float | None = None
+#
+#
+# @app.put("/items/{item_id}")
+# async def update_item(item_id: int, item: Item = Body(..., embed=True)):
+#     results = {"item_id": item_id, "item": item}
+#     return results
+
+
+class Image(BaseModel):
+    url: HttpUrl
+    name: str
+
 
 class Item(BaseModel):
-    name: str | None = Field(
-        ...,
-        description="Name of the electronic item"
-    )
-    description: str | None = Field(
-        None, title="The description of the item", max_length=300
-    )
-    price: float = Field(..., gt=0, description="The prize must be greater than zero")
+    name: str
+    description: str | None = None
+    price: float
     tax: float | None = None
+    tags: set[str] = set()
+    image: list[Image] | None = None
 
 
-@app.put("/items/{item_id}")
-async def update_item(item_id: int, item: Item = Body(..., embed=True)):
-    results = {"item_id": item_id, "item": item}
+class Offer(BaseModel):
+    name: str
+    description: str | None = None
+    price: float
+    items: list[Item]
+
+
+@app.put("/items/{items_id}")
+async def update_item(item_id: int, item:Item):
+    results = {"items_id": item_id, "item": item}
     return results
+
+
+@app.post("/offers")
+async def create_offer(offer: Offer = Body(..., embed=True)):
+    return offer
+
+
+@app.post("/image/multiple")
+async def create_multiple_images(image: list[Image]):
+    return image
+
+
+@app.post("/blah")
+async def create_blah(blahs: dict[int, float]):
+    return blahs
