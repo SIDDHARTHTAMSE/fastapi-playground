@@ -3,7 +3,7 @@ from typing import Optional
 from fastapi import Body, FastAPI, Query,Path
 
 from fastapi import FastAPI
-from pydantic import BaseModel
+from pydantic import BaseModel,  Field
 
 app = FastAPI()
 
@@ -170,36 +170,69 @@ app = FastAPI()
 
 # Part 7 --> Body - Multiple Parameters
 
+#
+# class Item(BaseModel):
+#     name: str
+#     description: str | None = None
+#     price: str
+#     tax: float | None = None
+#
+#
+# class User(BaseModel):
+#     username: str
+#     full_name: str | None = None
+#
+#
+# @app.put("/items/{item_id}")  # /items/{item_id} --> API path
+# async def update_item(
+#         *,
+#         item_id: int = Path(..., title="The ID of the item to get", ge=0, le=150),
+#         q: str | None = None,
+#         item: Item | None = None,
+#         user: User,
+#         importance: int = Body(...)
+# ):
+#         results = {"item_id": item_id}
+#         if q:
+#             results.update({"q": q})
+#         if item:
+#             results.update({"item": item})
+#         if user:
+#              results.update({"user": user})
+#         if importance:
+#             results.update({"importance": importance})
+#         return results
+#
+# @app.put("/items-x/{item_id}")  # /items/{item_id} --> API path
+# async def update_item(
+#         *,
+#         item_id: int = Path(..., title="The ID of the item to get", ge=0, le=150),
+#         q: str = Query(),
+#         item_name: str = Query(),
+#         item_description: str = Query(),
+#         item_price: int = Query(),
+#         item_tax: int = Query(),
+#         user_name: str = Query(),
+#         full_name: str = Query(),
+#         user: User,
+#         importance: int = Body(...)
+# ):
+#
+
 
 class Item(BaseModel):
-    name: str
-    description: str | None = None
-    price: str
+    name: str | None = Field(
+        ...,
+        description="Name of the electronic item"
+    )
+    description: str | None = Field(
+        None, title="The description of the item", max_length=300
+    )
+    price: float = Field(..., gt=0, description="The prize must be greater than zero")
     tax: float | None = None
 
 
-class User(BaseModel):
-    username: str
-    full_name: str | None = None
-
-
 @app.put("/items/{item_id}")
-async def update_item(
-        *,
-        item_id: int = Path(..., title="The ID of the item to get", ge=0,le=150),
-        q: str | None = None,
-        item: Item | None = None,
-        user: User,
-        importance: int = Body(...)
-):
-        results = {"item_id": item_id}
-        if q:
-            results.update({"q": q})
-        if item:
-            results.update({"item": item})
-        if user:
-             results.update({"user": user})
-        if importance:
-            results.update({"importance": importance})
-        return results
-
+async def update_item(item_id: int, item: Item = Body(..., embed=True)):
+    results = {"item_id": item_id, "item": item}
+    return results
