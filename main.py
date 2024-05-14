@@ -1,11 +1,17 @@
+
+# Activate python in powershell:  .\env\Scripts\Activate.ps1'
+
+from datetime import datetime, time, timedelta
 from enum import Enum
 from typing import Optional
-from fastapi import Body, FastAPI, Query,Path
+from fastapi import Body, FastAPI, Query, Path, Cookie, Header
+from uuid import UUID
 
 from fastapi import FastAPI
-from pydantic import BaseModel,  Field, HttpUrl
+from pydantic import BaseModel, Field, HttpUrl
 
 app = FastAPI()
+
 
 #
 # @app.get("/")
@@ -237,44 +243,154 @@ app = FastAPI()
 #     results = {"item_id": item_id, "item": item}
 #     return results
 
+#
+# class Image(BaseModel):
+#     url: HttpUrl
+#     name: str
+#
+#
+# class Item(BaseModel):
+#     name: str
+#     description: str | None = None
+#     price: float
+#     tax: float | None = None
+#     tags: set[str] = set()
+#     image: list[Image] | None = None
+#
+#
+# class Offer(BaseModel):
+#     name: str
+#     description: str | None = None
+#     price: float
+#     items: list[Item]
+#
+#
+# @app.put("/items/{items_id}")
+# async def update_item(item_id: int, item:Item):
+#     results = {"items_id": item_id, "item": item}
+#     return results
+#
+#
+# @app.post("/offers")
+# async def create_offer(offer: Offer = Body(..., embed=True)):
+#     return offer
+#
+#
+# @app.post("/image/multiple")
+# async def create_multiple_images(image: list[Image]):
+#     return image
+#
+#
+# @app.post("/blah")
+# async def create_blah(blahs: dict[int, float]):
+#     return blahs
 
-class Image(BaseModel):
-    url: HttpUrl
-    name: str
-
-
+#
 class Item(BaseModel):
     name: str
     description: str | None = None
-    price: float
+    price: str
     tax: float | None = None
-    tags: set[str] = set()
-    image: list[Image] | None = None
+
+    class Config:
+        schema_extra = {
+           "example": {
+               "name": "Foo",
+               "description": "A very nice Item",
+               "price": 16.25,
+               "tax": 1.67,
+           }
+        }
+#
+#
+# class Product(BaseModel):
+#     a: int
+#     class Config:
+#         schema_extra = {
+#             "examples": [
+#                 {
+#                     "a": 100
+#                 },
+#                 {"a": 200}
+#             ]
+#         }
+# @app.put("/items2/{item_id}")
+# async def update_item2(
+#         item: Product
+# ):
+#     print(item)
+#     return "Hi"
+#
+# Declare Request Example data
 
 
-class Offer(BaseModel):
-    name: str
-    description: str | None = None
-    price: float
-    items: list[Item]
+@app.put("/items/{item_id}")
+async def update_item(
+    item_id: int,
+    item: Item = Body(
+        ...,
+        example={
+            "normal": {
+                "name": "Foo",
+                "description": "A very nice Item",
+                "price": 16.25,
+                "tax": 1.67,
+            },
+            "converted": {
+                "summary": "An example with converted data",
+                "description": "FastAPI can converted price `string` to actual `numbers` automatically",
+                "value": {"name": "Bar", "price": "16.25"},
 
-
-@app.put("/items/{items_id}")
-async def update_item(item_id: int, item:Item):
-    results = {"items_id": item_id, "item": item}
+            },
+            "Invalid": {
+                "summary": "Invalid data is rejected with an error",
+                "value": {"name": "Baz", "price": "sixteen point two five"}
+            }
+        },
+    ),
+):
+    results = {"item_id": item_id, "item": item}
     return results
 
-
-@app.post("/offers")
-async def create_offer(offer: Offer = Body(..., embed=True)):
-    return offer
+# Extra Data Types
 
 
-@app.post("/image/multiple")
-async def create_multiple_images(image: list[Image]):
-    return image
+@app.put("/item/{item_id}")
+async def read_items(
+        item_id: UUID,
+        start_date: datetime | None = Body(None),
+        end_date: datetime | None = Body(None),
+        repeat_at: time | None = Body(None),
+        process_after: timedelta | None = Body(None),
+):
+    start_process = start_date + process_after
+    duration = end_date - start_process
+    return {
+        "item_id": item_id,
+        "start_date": start_date,
+        "end_date": end_date,
+        "repeat_at": repeat_at,
+        "process_after": process_after,
+        "start_process": start_process,
+        "duration": duration,
+    }
+
+# Cookie and Header Parameter
 
 
-@app.post("/blah")
-async def create_blah(blahs: dict[int, float]):
-    return blahs
+@app.get("/items")
+async def read_items(
+        cookie_id: str | None = Cookie(None),
+        accept_encoding: str | None = Header(None),
+        sec_ch_ua: str | None = Header(None),
+        user_agent: str | None = Header(None),
+        x_token: list[str] = Header([])
+):
+
+    return {
+        "cookie_id": cookie_id,
+        "accept_encoding": accept_encoding,
+        "sec_ch_ua": sec_ch_ua,
+        "user_agent": user_agent,
+        "x_token": x_token
+    }
