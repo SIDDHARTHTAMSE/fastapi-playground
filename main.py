@@ -3,12 +3,12 @@
 
 from datetime import datetime, time, timedelta
 from enum import Enum
-from typing import Optional
+from typing import Optional, Literal
 from fastapi import Body, FastAPI, Query, Path, Cookie, Header
 from uuid import UUID
 
 from fastapi import FastAPI
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field, HttpUrl, EmailStr
 
 app = FastAPI()
 
@@ -286,21 +286,21 @@ app = FastAPI()
 #     return blahs
 
 #
-class Item(BaseModel):
-    name: str
-    description: str | None = None
-    price: str
-    tax: float | None = None
-
-    class Config:
-        schema_extra = {
-           "example": {
-               "name": "Foo",
-               "description": "A very nice Item",
-               "price": 16.25,
-               "tax": 1.67,
-           }
-        }
+# class Item(BaseModel):
+#     name: str
+#     description: str | None = None
+#     price: str
+#     tax: float | None = None
+#
+#     class Config:
+#         schema_extra = {
+#            "example": {
+#                "name": "Foo",
+#                "description": "A very nice Item",
+#                "price": 16.25,
+#                "tax": 1.67,
+#            }
+#         }
 #
 #
 # class Product(BaseModel):
@@ -324,73 +324,137 @@ class Item(BaseModel):
 # Declare Request Example data
 
 
-@app.put("/items/{item_id}")
-async def update_item(
-    item_id: int,
-    item: Item = Body(
-        ...,
-        example={
-            "normal": {
-                "name": "Foo",
-                "description": "A very nice Item",
-                "price": 16.25,
-                "tax": 1.67,
-            },
-            "converted": {
-                "summary": "An example with converted data",
-                "description": "FastAPI can converted price `string` to actual `numbers` automatically",
-                "value": {"name": "Bar", "price": "16.25"},
-
-            },
-            "Invalid": {
-                "summary": "Invalid data is rejected with an error",
-                "value": {"name": "Baz", "price": "sixteen point two five"}
-            }
-        },
-    ),
-):
-    results = {"item_id": item_id, "item": item}
-    return results
+# @app.put("/items/{item_id}")
+# async def update_item(
+#     item_id: int,
+#     item: Item = Body(
+#         ...,
+#         example={
+#             "normal": {
+#                 "name": "Foo",
+#                 "description": "A very nice Item",
+#                 "price": 16.25,
+#                 "tax": 1.67,
+#             },
+#             "converted": {
+#                 "summary": "An example with converted data",
+#                 "description": "FastAPI can converted price `string` to actual `numbers` automatically",
+#                 "value": {"name": "Bar", "price": "16.25"},
+#
+#             },
+#             "Invalid": {
+#                 "summary": "Invalid data is rejected with an error",
+#                 "value": {"name": "Baz", "price": "sixteen point two five"}
+#             }
+#         },
+#     ),
+# ):
+#     results = {"item_id": item_id, "item": item}
+#     return results
 
 # Extra Data Types
 
 
-@app.put("/item/{item_id}")
-async def read_items(
-        item_id: UUID,
-        start_date: datetime | None = Body(None),
-        end_date: datetime | None = Body(None),
-        repeat_at: time | None = Body(None),
-        process_after: timedelta | None = Body(None),
-):
-    start_process = start_date + process_after
-    duration = end_date - start_process
-    return {
-        "item_id": item_id,
-        "start_date": start_date,
-        "end_date": end_date,
-        "repeat_at": repeat_at,
-        "process_after": process_after,
-        "start_process": start_process,
-        "duration": duration,
-    }
+# @app.put("/item/{item_id}")
+# async def read_items(
+#         item_id: UUID,
+#         start_date: datetime | None = Body(None),
+#         end_date: datetime | None = Body(None),
+#         repeat_at: time | None = Body(None),
+#         process_after: timedelta | None = Body(None),
+# ):
+#     start_process = start_date + process_after
+#     duration = end_date - start_process
+#     return {
+#         "item_id": item_id,
+#         "start_date": start_date,
+#         "end_date": end_date,
+#         "repeat_at": repeat_at,
+#         "process_after": process_after,
+#         "start_process": start_process,
+#         "duration": duration,
+#     }
 
 # Cookie and Header Parameter
 
 
-@app.get("/items")
-async def read_items(
-        cookie_id: str | None = Cookie(None),
-        accept_encoding: str | None = Header(None),
-        sec_ch_ua: str | None = Header(None),
-        user_agent: str | None = Header(None),
-        x_token: list[str] = Header([])
-):
+# @app.get("/items")
+# async def read_items(
+#         cookie_id: str | None = Cookie(None),
+#         accept_encoding: str | None = Header(None),
+#         sec_ch_ua: str | None = Header(None),
+#         user_agent: str | None = Header(None),
+#         x_token: list[str] = Header([])
+# ):
+#
+#     return {
+#         "cookie_id": cookie_id,
+#         "accept_encoding": accept_encoding,
+#         "sec_ch_ua": sec_ch_ua,
+#         "user_agent": user_agent,
+#         "x_token": x_token
+#     }
 
-    return {
-        "cookie_id": cookie_id,
-        "accept_encoding": accept_encoding,
-        "sec_ch_ua": sec_ch_ua,
-        "user_agent": user_agent,
-        "x_token": x_token
-    }
+# Response Model
+class Item(BaseModel):
+    name: str
+    description: str | None = None
+    price: float
+    tax: float | None = None
+    tags: list[str] = []
+
+
+items = {
+    "foo": {"name": "Foo", "price": 50.2},
+    "bar": {"name": "Bar", "description": "The bartenders", "price": 62, "tax": 20.2},
+    "baz": {"name": "Baz", "description": None, "price": 50.2, "tax": 10.5, "tags": []},
+}
+
+
+@app.get("/items/{item_id}", response_model=Item, response_model_exclude_unset=True)
+async def read_item(item_id: Literal["foo", "bar", "baz"]):
+    return items[item_id]
+
+
+@app.post("/items/", response_model=Item)
+async def create_item(item_id: Item):
+    return item_id
+
+
+class UserBase(BaseModel):
+    username: str
+    email: EmailStr
+    full_name: str | None = None
+
+
+class UserIn(UserBase):
+    password: str
+
+
+class UserOut(UserBase):
+    pass
+
+
+@app.post("/user/", response_model=UserOut)
+async def create_user(user: UserIn):
+    return user
+
+
+@app.get(
+    "/item,{item_id}/name",
+    response_model=Item,
+    response_model_include={"name", "description"},
+)
+async def read_item_name(
+        item_id: Literal["foo", "bar", "baz"]
+):
+    return items[item_id]
+
+
+@app.get(
+    "/item,{item_id},public",
+    response_model=Item,
+    response_model_exclude={"tax"},
+)
+async def read_items_public_data(item_id: Literal["foo", "bar", "baz"]):
+    return items[item_id]
