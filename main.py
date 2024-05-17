@@ -591,16 +591,29 @@ app = FastAPI()
 #     return {"filename": [file.filename for file in files]}
 
 
-@app.get("/")
-async def main():
-    content = """
-    Response Model
-# class Item(BaseModel):
-#     name: str
-#     description: str | None = None
-#     price: float
-#     tax: float | None = None
-#     tags: list[str] = []
-    """
-    return HTMLResponse(content=content)
+# @app.get("/")
+# async def main():
+#     content = """
+#     Response Model
+# # class Item(BaseModel):
+# #     name: str
+# #     description: str | None = None
+# #     price: float
+# #     tax: float | None = None
+# #     tags: list[str] = []
+#     """
+#     return HTMLResponse(content=content)
 
+
+# Request Forms and Files
+@app.post("/files/")
+async def create_file(
+        file: bytes = File(...),
+        fileb: UploadFile = File(...),
+        token: str = Form(...)
+):
+    return {
+        "file_size": len(file),
+        "token": token,
+        "fileb_content_type": fileb.content_type,
+    }
