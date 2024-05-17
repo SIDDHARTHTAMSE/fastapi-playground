@@ -9,6 +9,7 @@ from uuid import UUID
 
 from fastapi import FastAPI
 from pydantic import BaseModel, Field, HttpUrl, EmailStr
+from starlette.responses import HTMLResponse
 
 app = FastAPI()
 
@@ -575,16 +576,31 @@ app = FastAPI()
 
 
 # Request Files
-@app.post("/files/")
-async def create_file(
-        files: list[bytes] = File(..., description="A file read as bytes")
-):
-    return {"file_sizes": [len(file) for file in files]}
+
+# @app.post("/files/")
+# async def create_file(
+#         files: list[bytes] = File(..., description="A file read as bytes")
+# ):
+#     return {"file_sizes": [len(file) for file in files]}
+#
+#
+# @app.post("/uploadfile/")
+# async def create_upload_file(
+#         files: list[UploadFile] = File(..., description="A file read as UploadFile")
+# ):
+#     return {"filename": [file.filename for file in files]}
 
 
-@app.post("/uploadfile/")
-async def create_upload_file(
-        files: list[UploadFile] = File(..., description="A file read as UploadFile")
-):
-    return {"filename": [file.filename for file in files]}
+@app.get("/")
+async def main():
+    content = """
+    Response Model
+# class Item(BaseModel):
+#     name: str
+#     description: str | None = None
+#     price: float
+#     tax: float | None = None
+#     tags: list[str] = []
+    """
+    return HTMLResponse(content=content)
 
