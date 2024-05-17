@@ -4,11 +4,27 @@
 from datetime import datetime, time, timedelta
 from enum import Enum
 from typing import Optional, Literal, Union
-from fastapi import Body, FastAPI, Query, Path, Cookie, Header, status, Form, File, UploadFile
+from fastapi import (
+    Body,
+    FastAPI,
+    Query,
+    Path,
+    Cookie,
+    Header,
+    status,
+    Form,
+    File,
+    UploadFile,
+    HTTPException,
+    Request,
+)
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse, PlainTextResponse
 from uuid import UUID
 
 from fastapi import FastAPI
 from pydantic import BaseModel, Field, HttpUrl, EmailStr
+
 from starlette.responses import HTMLResponse
 
 app = FastAPI()
@@ -606,14 +622,61 @@ app = FastAPI()
 
 
 # Request Forms and Files
-@app.post("/files/")
-async def create_file(
-        file: bytes = File(...),
-        fileb: UploadFile = File(...),
-        token: str = Form(...)
-):
-    return {
-        "file_size": len(file),
-        "token": token,
-        "fileb_content_type": fileb.content_type,
-    }
+# @app.post("/files/")
+# async def create_file(
+#         file: bytes = File(...),
+#         fileb: UploadFile = File(...),
+#         token: str = Form(...)
+# ):
+#     return {
+#         "file_size": len(file),
+#         "token": token,
+#         "fileb_content_type": fileb.content_type,
+#     }
+
+# Handling Errors
+items = {"foo": "The Foo Wrestlers"}
+
+
+@app.get("/items/{item_id}")
+async def read_item(item_id: str):
+    if item_id not in items:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Item not found",
+            headers={"x-Error": "There goes my error"},
+        )
+    return {"item": items[item_id]}
+
+
+class UnicornException(Exception):
+    def __init__(self, name: str):
+        self.name = name
+
+
+@app.exception_handler(UnicornException)
+async def unicorn_exception_handler(request: Request, exc: UnicornException):
+    return JSONResponse(
+        status_code=418,
+        content={"message": f"Oops! {exc.name} did something. There goes a rainbow"},
+    )
+
+
+@app.get("/unicorns/{name}")
+async def read_unicorns(name: str):
+    if name == 'yolo':
+        raise UnicornException(name=name)
+    return {"unicorn_name": name}
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_items(request, exc):
+    return PlainTextResponse(str(exc), status_code=400)
+
+
+@app.get("/validation_items{item_id}")
+async def read_validation_items(item_id: int):
+    if item_id == 3:
+        raise HTTPException(status_code=418, detail="Nope! i dont like 3.")
+    return {"item_id": item_id}
+
