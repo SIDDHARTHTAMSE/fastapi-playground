@@ -4,7 +4,7 @@
 from datetime import datetime, time, timedelta
 from enum import Enum
 from typing import Optional, Literal, Union
-from fastapi import Body, FastAPI, Query, Path, Cookie, Header
+from fastapi import Body, FastAPI, Query, Path, Cookie, Header, status, Form, File, UploadFile
 from uuid import UUID
 
 from fastapi import FastAPI
@@ -461,85 +461,126 @@ app = FastAPI()
 
 # Extra Models
 
-class UserBase(BaseModel):
-    username: str
-    email: EmailStr
-    full_name: str | None = None
+# class UserBase(BaseModel):
+#     username: str
+#     email: EmailStr
+#     full_name: str | None = None
+#
+#
+# class UserIn(UserBase):
+#     password: str
+#
+#
+# class UserOut(UserBase):
+#     pass
+#
+#
+# class UserInDB(BaseModel):
+#     hashed_password: str
+#
+#
+# def fake_password_hasher(raw_password: str):
+#     return f"supersecret{raw_password}"
+#
+#
+# def fake_save_user(user_in: UserIn):
+#     hashed_password = fake_password_hasher(raw_password=user_in.password)
+#     user_in_db = UserInDB(**user_in.dict(), hashed_password=hashed_password)
+#     print("User 'saved'.")
+#     return user_in_db
+#
+#
+# @app.post("/user/", response_model=UserOut)
+# async def create_user(user_in: UserIn):
+#     user_saved = fake_save_user(user_in)
+#     return user_saved
+#
+#
+# class BaseItem(BaseModel):
+#     description: str
+#     type: str
+#
+#
+# class CarItem(BaseItem):
+#     type: str = "car"
+#
+#
+# class PlaneItem(BaseItem):
+#     type: str = "plane"
+#     size: int
+#
+#
+# items = {
+#     "item1": {
+#         "description": "All my friends driver a low rider",
+#         "type": "car"
+#     },
+#     "item2": {
+#         "description": "Music is my aeroplane, it's my aeroplane",
+#         "type": "plane",
+#         "size": 5,
+#     },
+# }
+#
+#
+# @app.get("/items/{item_id}", response_model=Union[PlaneItem, CarItem])
+# async def read_item(item_id: Literal["item1", "item2"]):
+#     return items[item_id]
+#
+#
+# class ListItem(BaseModel):
+#     name: str
+#     description: str
+#
+#
+# list_items = [
+#     {"item1": "foo", "description": "There comes my hero"},
+#     {"item2": "Red", "description": "It's my aeroplane"},
+# ]
+#
+#
+# @app.get("/list_items/", response_model=list[ListItem])
+# async def read_items():
+#     return items
+
+# Response Status Codes
+
+@app.post("/items/", status_code=status.HTTP_201_CREATED)
+async def create_item(name: str):
+    return {"name": name}
 
 
-class UserIn(UserBase):
-    password: str
+@app.delete("/items/{pk}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_item(pk: str):
+    print("pk", pk)
+    return pk
 
 
-class UserOut(UserBase):
-    pass
+@app.get("/items", status_code=status.HTTP_302_FOUND)
+async def read_items_redirect():
+    return {"hello": "world"}
+
+# Form Fields
+
+@app.post("/login/")
+async def login(username: str = Form(...), password: str = Body(...)):
+    print("username", password)
+    return {"username": username}
 
 
-class UserInDB(BaseModel):
-    hashed_password: str
+@app.post("/login-json/")
+async def login_json(username: str = Body(...), password: str = Body(...)):
+    print("username", password)
+    return {"username": username}
 
 
-def fake_password_hasher(raw_password: str):
-    return f"supersecret{raw_password}"
+# Request Files
+@app.post("/files/")
+async def create_file(file: bytes = File(...)):
+    return {"file": len(file)}
 
 
-def fake_save_user(user_in: UserIn):
-    hashed_password = fake_password_hasher(raw_password=user_in.password)
-    user_in_db = UserInDB(**user_in.dict(), hashed_password=hashed_password)
-    print("User 'saved'.")
-    return user_in_db
-
-
-@app.post("/user/", response_model=UserOut)
-async def create_user(user_in: UserIn):
-    user_saved = fake_save_user(user_in)
-    return user_saved
-
-
-class BaseItem(BaseModel):
-    description: str
-    type: str
-
-
-class CarItem(BaseItem):
-    type: str = "car"
-
-
-class PlaneItem(BaseItem):
-    type: str = "plane"
-    size: int
-
-
-items = {
-    "item1": {
-        "description": "All my friends driver a low rider",
-        "type": "car"
-    },
-    "item2": {
-        "description": "Music is my aeroplane, it's my aeroplane",
-        "type": "plane",
-        "size": 5,
-    },
-}
-
-
-@app.get("/items/{item_id}", response_model=Union[PlaneItem, CarItem])
-async def read_item(item_id: Literal["item1", "item2"]):
-    return items[item_id]
-
-
-class ListItem(BaseModel):
-    name: str
-    description: str
-
-
-list_items = [
-    {"item1": "foo", "description": "There comes my hero"},
-    {"item2": "Red", "description": "It's my aeroplane"},
-]
-
-
-@app.get("/list_items/", response_model=list[ListItem])
-async def read_items():
-    return items
+@app.post("/uploadfile/")
+async def create_upload_file(file: UploadFile):
+    return {"filename": file.filename}
 
