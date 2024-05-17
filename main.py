@@ -545,42 +545,46 @@ app = FastAPI()
 
 # Response Status Codes
 
-@app.post("/items/", status_code=status.HTTP_201_CREATED)
-async def create_item(name: str):
-    return {"name": name}
-
-
-@app.delete("/items/{pk}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_item(pk: str):
-    print("pk", pk)
-    return pk
-
-
-@app.get("/items", status_code=status.HTTP_302_FOUND)
-async def read_items_redirect():
-    return {"hello": "world"}
+# @app.post("/items/", status_code=status.HTTP_201_CREATED)
+# async def create_item(name: str):
+#     return {"name": name}
+#
+#
+# @app.delete("/items/{pk}", status_code=status.HTTP_204_NO_CONTENT)
+# async def delete_item(pk: str):
+#     print("pk", pk)
+#     return pk
+#
+#
+# @app.get("/items", status_code=status.HTTP_302_FOUND)
+# async def read_items_redirect():
+#     return {"hello": "world"}
 
 # Form Fields
 
-@app.post("/login/")
-async def login(username: str = Form(...), password: str = Body(...)):
-    print("username", password)
-    return {"username": username}
-
-
-@app.post("/login-json/")
-async def login_json(username: str = Body(...), password: str = Body(...)):
-    print("username", password)
-    return {"username": username}
+# @app.post("/login/")
+# async def login(username: str = Form(...), password: str = Body(...)):
+#     print("username", password)
+#     return {"username": username}
+#
+#
+# @app.post("/login-json/")
+# async def login_json(username: str = Body(...), password: str = Body(...)):
+#     print("username", password)
+#     return {"username": username}
 
 
 # Request Files
 @app.post("/files/")
-async def create_file(file: bytes = File(...)):
-    return {"file": len(file)}
+async def create_file(
+        files: list[bytes] = File(..., description="A file read as bytes")
+):
+    return {"file_sizes": [len(file) for file in files]}
 
 
 @app.post("/uploadfile/")
-async def create_upload_file(file: UploadFile):
-    return {"filename": file.filename}
+async def create_upload_file(
+        files: list[UploadFile] = File(..., description="A file read as UploadFile")
+):
+    return {"filename": [file.filename for file in files]}
 
