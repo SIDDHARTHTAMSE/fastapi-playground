@@ -637,38 +637,39 @@ app = FastAPI()
 #     }
 
 # Handling Errors
-items = {"foo": "The Foo Wrestlers"}
 
-
-@app.get("/items/{item_id}")
-async def read_item(item_id: str):
-    if item_id not in items:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Item not found",
-            headers={"x-Error": "There goes my error"},
-        )
-    return {"item": items[item_id]}
-
-
-class UnicornException(Exception):
-    def __init__(self, name: str):
-        self.name = name
-
-
-@app.exception_handler(UnicornException)
-async def unicorn_exception_handler(request: Request, exc: UnicornException):
-    return JSONResponse(
-        status_code=418,
-        content={"message": f"Oops! {exc.name} did something. There goes a rainbow"},
-    )
-
-
-@app.get("/unicorns/{name}")
-async def read_unicorns(name: str):
-    if name == 'yolo':
-        raise UnicornException(name=name)
-    return {"unicorn_name": name}
+# items = {"foo": "The Foo Wrestlers"}
+#
+#
+# @app.get("/items/{item_id}")
+# async def read_item(item_id: str):
+#     if item_id not in items:
+#         raise HTTPException(
+#             status_code=status.HTTP_404_NOT_FOUND,
+#             detail="Item not found",
+#             headers={"x-Error": "There goes my error"},
+#         )
+#     return {"item": items[item_id]}
+#
+#
+# class UnicornException(Exception):
+#     def __init__(self, name: str):
+#         self.name = name
+#
+#
+# @app.exception_handler(UnicornException)
+# async def unicorn_exception_handler(request: Request, exc: UnicornException):
+#     return JSONResponse(
+#         status_code=418,
+#         content={"message": f"Oops! {exc.name} did something. There goes a rainbow"},
+#     )
+#
+#
+# @app.get("/unicorns/{name}")
+# async def read_unicorns(name: str):
+#     if name == 'yolo':
+#         raise UnicornException(name=name)
+#     return {"unicorn_name": name}
 
 
 # @app.exception_handler(RequestValidationError)
@@ -683,38 +684,65 @@ async def read_unicorns(name: str):
 #     return {"item_id": item_id}
 
 
-@app.exception_handler(RequestValidationError)
-async def validation_exceptional_handler(request: Request, exc: RequestValidationError):
-    return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content=jsonable_encoder({"detail": exc.errors(), "body": exc.body}),
-    )
+# @app.exception_handler(RequestValidationError)
+# async def validation_exceptional_handler(request: Request, exc: RequestValidationError):
+#     return JSONResponse(
+#         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+#         content=jsonable_encoder({"detail": exc.errors(), "body": exc.body}),
+#     )
+#
+#
+# class Item(BaseModel):
+#     title: str
+#     size: int
+#
+#
+# @app.post("/items/")
+# async def create_item(item: Item):
+#     return item
+#
+#
+# @app.exception_handler(StarletteHTTPException)
+# async def custom_http_exception_handler(request, exc):
+#     print(f"OMG! An HTTP error!: {repr(exc)}")
+#     return await http_exception_handler(request, exc)
+#
+#
+# @app.exception_handler(RequestValidationError)
+# async def validation_exceptional_handler(request, exc):
+#     print(f"OMG! The client sent invalid data!: {exc}")
+#     return await request_validation_exception_handler(request, exc)
+#
+#
+# @app.get("/blah_items/{item_id}")
+# async def read_items(item_id: int):
+#     if item_id == 3:
+#         raise HTTPException(status_code=418, detail="Nope! I dont like 3.")
+#     return {"item_id": item_id}
 
-
+# Path Operation Configuration
 class Item(BaseModel):
-    title: str
-    size: int
+    name: str
+    description: str | None = None
+    price: float
+    tax: float
+    tag: set[str] = set()
 
 
-@app.post("/items/")
+@app.post("/items/", response_model=Item, status_code=status.HTTP_201_CREATED, tags=["items"])
 async def create_item(item: Item):
     return item
 
 
-@app.exception_handler(StarletteHTTPException)
-async def custom_http_exception_handler(request, exc):
-    print(f"OMG! An HTTP error!: {repr(exc)}")
-    return await http_exception_handler(request, exc)
+@app.get("/items", tags=["items"])
+async def read_items():
+    return [{"items": "Foo", "price": 42}]
 
 
-@app.exception_handler(RequestValidationError)
-async def validation_exceptional_handler(request, exc):
-    print(f"OMG! The client sent invalid data!: {exc}")
-    return await request_validation_exception_handler(request, exc)
+@app.get("/Users/", tags=["users"])
+async def read_users():
+    return [{"username": "PhoebeBuffay"}]
 
 
-@app.get("/blah_items/{item_id}")
-async def read_items(item_id: int):
-    if item_id == 3:
-        raise HTTPException(status_code=418, detail="Nope! I dont like 3.")
-    return {"item_id": item_id}
+
+
