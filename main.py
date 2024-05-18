@@ -720,6 +720,7 @@ app = FastAPI()
 #         raise HTTPException(status_code=418, detail="Nope! I dont like 3.")
 #     return {"item_id": item_id}
 
+
 # Path Operation Configuration
 class Item(BaseModel):
     name: str
@@ -729,20 +730,49 @@ class Item(BaseModel):
     tag: set[str] = set()
 
 
-@app.post("/items/", response_model=Item, status_code=status.HTTP_201_CREATED, tags=["items"])
+class Tags(Enum):
+    items = "Items"
+    users = "Users"
+
+
+@app.post(
+    "/items/",
+    response_model=Item,
+    status_code=status.HTTP_201_CREATED,
+    tags=[Tags.items],
+    summary="Create an Item-type item",
+    # description="Create an item with all the information: "
+    #             "name; description; price; and a set of "
+    #             "unique tags",
+    response_description="The created item"
+)
 async def create_item(item: Item):
+    """
+    Create an item with all the information:
+
+
+    - **name**: each item must have a name
+    - **description**: a long description
+    - **price**: required
+    - **tax**: if the item doesn't have tax, you can amit this
+    - **tags**: a set of unique tag strings for this item
+    """
     return item
 
 
-@app.get("/items", tags=["items"])
+@app.get("/items", tags=[Tags.items])
 async def read_items():
     return [{"items": "Foo", "price": 42}]
 
 
-@app.get("/Users/", tags=["users"])
+@app.get("/users/", tags=[Tags.users])
 async def read_users():
     return [{"username": "PhoebeBuffay"}]
 
+
+@app.get("/element/", tags=[Tags.items], deprecated=True)
+async def read_element():
+    return [{"item_id": "Foo"}]
 
 
 
