@@ -850,25 +850,42 @@ app = FastAPI()
 
 # Classes as Dependencies
 
-fake_items_db = [
-    {"item_name": "Foo"},
-    {"Item_name": "Bar"},
-    {"item_name": "Baz"}
-]
+# fake_items_db = [
+#     {"item_name": "Foo"},
+#     {"Item_name": "Bar"},
+#     {"item_name": "Baz"}
+# ]
+#
+#
+# class CommonQueryParams:
+#     def __init__(self, q: str | None = None, skip: int = 0, limit: int = 100):
+#         self.q = q
+#         self.skip = skip
+#         self.limit = limit
+#
+#
+# @app.get("/items/")
+# async def read_items(commons: CommonQueryParams = Depends(CommonQueryParams)):
+#     response = {}
+#     if commons.q:
+#         response.update({"q": commons.q})
+#     items = fake_items_db[commons.skip + commons.limit]
+#     response.update({"items": items})
+#     return response
+
+# Sub-Dependencies
+def query_extractor(q: str | None = None):
+    return q
 
 
-class CommonQueryParams:
-    def __init__(self, q: str | None = None, skip: int = 0, limit: int = 100):
-        self.q = q
-        self.skip = skip
-        self.limit = limit
+def query_or_body_extractor(
+        q: str = Depends(query_extractor), last_query: str | None = Body(None)
+):
+    if not q:
+        return last_query
+    return q
 
 
-@app.get("/items/")
-async def read_items(commons: CommonQueryParams = Depends(CommonQueryParams)):
-    response = {}
-    if commons.q:
-        response.update({"q": commons.q})
-    items = fake_items_db[commons.skip + commons.limit]
-    response.update({"items": items})
-    return response
+@app.post("/item")
+async def try_query(query_or_body: str = Depends(query_or_body_extractor)):
+    return {"q_or_body": query_or_body}
