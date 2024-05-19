@@ -874,18 +874,34 @@ app = FastAPI()
 #     return response
 
 # Sub-Dependencies
-def query_extractor(q: str | None = None):
-    return q
+
+# def query_extractor(q: str | None = None):
+#     return q
+#
+#
+# def query_or_body_extractor(
+#         q: str = Depends(query_extractor), last_query: str | None = Body(None)
+# ):
+#     if not q:
+#         return last_query
+#     return q
+#
+#
+# @app.post("/item")
+# async def try_query(query_or_body: str = Depends(query_or_body_extractor)):
+#     return {"q_or_body": query_or_body}
+
+# Dependencies in path operation decorators
+async def verify_token(x_token: str = Header(...)):
+    if x_token != "fake-super-secret-token":
+        raise HTTPException(status_code=400, detail="X-Token header invalid")
 
 
-def query_or_body_extractor(
-        q: str = Depends(query_extractor), last_query: str | None = Body(None)
-):
-    if not q:
-        return last_query
-    return q
+async def verify_key(x_key: str = Header(...)):
+    if x_key != "fake-super-secret-key":
+        raise HTTPException(status_code=400, detail="X-Key header invalid")
 
 
-@app.post("/item")
-async def try_query(query_or_body: str = Depends(query_or_body_extractor)):
-    return {"q_or_body": query_or_body}
+@app.get("/items", dependencies=[Depends(verify_token), Depends(verify_key)])
+async def read_items():
+    return [{"item": "Foo"}, {"item": "bar"}]
