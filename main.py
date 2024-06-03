@@ -26,6 +26,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.exception_handlers import http_exception_handler, request_validation_exception_handler
 from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.staticfiles import StaticFiles
 
 from uuid import UUID
 
@@ -1152,40 +1153,146 @@ app = FastAPI()
 #     return {"hello": "world"}
 
 # Background Tasks
-import time
+# import time
+#
+#
+# def write_notification(email: str, message=""):
+#     with open("log.txt", mode="w") as email_file:
+#         content = f"notification for {email}: {message}"
+#         time.sleep(5)
+#         email_file.write(content)
+#
+#
+# @app.get("/send-notification/{email}", status_code=202)
+# async def send_notification(email: str, background_tasks: BackgroundTasks):
+#     background_tasks.add_task(write_notification, email, message="some notification")
+#     return {"message": "Notification sent in the background"}
+#
+#
+# def write_log(message: str):
+#     with open('log.txt', mode='a') as log:
+#         log.write(message)
+#
+#
+# def get_query(background_tasks: BackgroundTasks, q: str | None = None):
+#     if q:
+#         message = f"found query: {q}\n"
+#         background_tasks.add_task(write_log, message)
+#     return q
+#
+#
+# @app.post("/send-notification/{email}")
+# async def send_notification(
+#         email: str, background_tasks: BackgroundTasks, q: str = Depends(get_query)
+# ):
+#     message = f"message to {email}\n"
+#     background_tasks.add_task(write_log, message)
+#     return {"message": "Message sent", "query": q}
 
 
-def write_notification(email: str, message=""):
-    with open("log.txt", mode="w") as email_file:
-        content = f"notification for {email}: {message}"
-        time.sleep(5)
-        email_file.write(content)
+# Metadata and Docs URLs
+
+# description = """
+# ChimichangeApp API helps you do awesome stuff.
+#
+# ## Items
+#
+# You can **read items**.
+#
+# # Users
+#
+# You will able to:
+#  * **Create users** (_not implemented_).
+#  * **Read users** (_not implemented_).
+#
+# """
+#
+# tags_metadata = [
+#     dict(
+#         name="users",
+#         description="Operation with users. The **login** logic is also here.",
+#     ),
+#     dict(
+#         name="items",
+#         description="Manage items. So _fancy_ they have their own docs.",
+#         externalDocs=dict(
+#             description="Items external docs",
+#             url="http://www.jvp.design"
+#         ),
+#     ),
+# ]
+#
+#
+# app = FastAPI(
+#     title="ChemichangeApp",
+#     description=description,
+#     version="0.0.1",
+#     terms_of_service="http://example.com/terms/",
+#     contact=dict(
+#         name="Deadpoolio the Amazing",
+#         url="http://x-force.example.com/contact",
+#         email="dp@x-force.example.com",
+#     ),
+#     license_info=dict(
+#         name="Apache 2.0",
+#         url="https://www.apache.org/licenses/LICENSE-2.0.HTML",
+#     ),
+#     openapi_tags=tags_metadata,
+#     openapi_url="/api/v1/openapi.json",
+#     docs_url="/hello-world",
+#     redoc_url=None,
+# )
+#
+#
+# @app.get("/users", tags=["users"])
+# async def get_users():
+#     return [dict(name="Harry", dict="Rony")]
+#
+#
+# @app.get("/items", tags=["items"])
+# async def read_items():
+#     return [dict(name="wand"), dict(name="flying broom")]
 
 
-@app.get("/send-notification/{email}", status_code=202)
-async def send_notification(email: str, background_tasks: BackgroundTasks):
-    background_tasks.add_task(write_notification, email, message="some notification")
-    return {"message": "Notification sent in the background"}
+## Static Files, Testig and Debugging
+
+# app.mount("/static", StaticFiles(directory="static"), name="static")
+
+fake_secret_token = "coneofsilence"
+fake_db = dict(
+    foo=dict(
+        id="foo",
+        title="Foo",
+        description="There goes my hero",
+    ),
+    bar=dict(
+        id="bar",
+        title="Bar",
+        description="The bartenders",
+    )
+)
 
 
-def write_log(message: str):
-    with open('log.txt', mode='a') as log:
-        log.write(message)
+class Item(BaseModel):
+    id: str
+    title: str
+    description: str | None = None
 
 
-def get_query(background_tasks: BackgroundTasks, q: str | None = None):
-    if q:
-        message = f"found query: {q}\n"
-        background_tasks.add_task(write_log, message)
-    return q
+@app.get("/items/{item_id}", response_model=Item)
+async def read_main(item_id: str, x_token: str = Header(...)):
+    if x_token != fake_secret_token:
+        raise HTTPException(status_code=400, detail="Invalid x-Token header")
+    if item_id not in fake_db:
+        raise HTTPException(status_code=404, detail="Item not found")
+    return fake_db[item_id]
 
 
-@app.post("/send-notification/{email}")
-async def send_notification(
-        email: str, background_tasks: BackgroundTasks, q: str = Depends(get_query)
-):
-    message = f"message to {email}\n"
-    background_tasks.add_task(write_log, message)
-    return {"message": "Message sent", "query": q}
-
-
+@app.post("/items/", response_model=Item)
+async def create_item(item: Item, x_token: str = Header(...)):
+    if x_token != fake_secret_token:
+        raise HTTPException(status_code=400, detail="Invalid x-Token header")
+    if item.id in fake_db:
+        raise HTTPException(status_code=408, detail="Item already exist")
+    fake_db[item.id] = item
+    return item
